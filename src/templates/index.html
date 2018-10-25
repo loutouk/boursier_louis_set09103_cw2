@@ -1,0 +1,18 @@
+{% extends "min_base.html" %}
+{% block content %}
+
+{% for file in content %}
+<ul>
+  {% for col in file %}
+  <li>
+    {% if loop.index0 == 2 %}
+        <a href="{{col}}" target="blank">View</a>
+    {% else %}
+        {{col}}
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endfor %}
+
+{% endblock %}}

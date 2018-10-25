@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html lang="en">
+	<head>
+	  <meta charset="utf-8">
+	  <title>{{title}}</title>
+	  <meta name="description" content="First coursework for the advanced web technologies module">
+	  <meta name="author" content="{{author}}">
+	  <link href ="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet"/>
+      <!-- Custom styles for this template -->
+      <link href ="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet"/>
+      <link href="http://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet"/>
+	</head>
+
+	<body>
+
+	    <div class="d-flex w-100 h-100 p-3 flex-column">
+			{% block content %} {% endblock %}
+	    </div>
+
+		<script src="{{ url_for ('static', filename = 'js/jquery.min.js')}}"></script>
+		<script src ="{{ url_for ('static', filename = 'js/bootstrap.min.js')}}"> </script>
+        <script type="text/javascript" charset="utf8" src="{{ url_for ('static', filename = 'js/dataTables.min.js')}}"></script>
+		<script type="text/javascript" charset="utf8" src="{{ url_for ('static', filename = 'js/table.js')}}"></script>
+	</body>
+</html>

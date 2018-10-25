@@ -1,0 +1,6 @@
+client id
+1039713348319-qnm90hdf3p28c326v5d129n1omvlv589.apps.googleusercontent.com
+secret client pin code
+fosNxZJb4v-Pnudm989UPY-l
+API KEY
+AIzaSyARauB47h48IPDWr_KkaUzPKX0vuSw9fh0
