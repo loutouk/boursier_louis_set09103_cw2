@@ -18,6 +18,17 @@
 			{% block content %} {% endblock %}
 	    </div>
 
+	    {% with messages = get_flashed_messages() %}
+		  {% if messages %}
+		    <ul class=flashes>
+		    {% for message in messages %}
+		      <li>{{ message }}</li>
+		    {% endfor %}
+		    </ul>
+		  {% endif %}
+		{% endwith %}
+		{% block body %}{% endblock %}
+
 		<script src="{{ url_for ('static', filename = 'js/jquery.min.js')}}"></script>
 		<script src ="{{ url_for ('static', filename = 'js/bootstrap.min.js')}}"> </script>
         <script type="text/javascript" charset="utf8" src="{{ url_for ('static', filename = 'js/dataTables.min.js')}}"></script>
