@@ -16,12 +16,6 @@ class Database:
 	def __del__(self):
 		self.conn.close()
 
-	# we can destroy the table if it exists as this function is only called when we want to init the database
-	def create_database(self):
-		self.conn.cursor().execute('DROP TABLE IF EXISTS mydemo')
-		self.conn.cursor().execute('CREATE TABLE IF NOT EXISTS mydemo (name text)')
-		self.conn.commit()
-
 	def fill_database(self):
 		values = ["dummy"]
 		self.conn.cursor().execute('INSERT INTO mydemo (name) VALUES(?)', values)
@@ -31,3 +25,48 @@ class Database:
 		self.conn = sqlite3.connect(self.dbFileLocation)
 		result = self.conn.cursor().execute('SELECT * FROM mydemo').fetchall()
 		return result
+
+	def create_database(self):
+		query = """CREATE TABLE IF NOT EXISTS user(
+					  id INTEGER PRIMARY KEY,
+					  email TEXT NOT NULL,
+					  password TEXT NOT NULL
+					)"""
+		self.conn.cursor().execute(query)
+		self.conn.commit()
+
+		query = """CREATE TABLE IF NOT EXISTS cloudset(
+		  id INTEGER PRIMARY KEY,
+		  userId INTEGER,
+		  name TEXT NOT NULL,
+		  FOREIGN KEY(userId) REFERENCES user(id) 
+			  ON UPDATE CASCADE 
+			  ON DELETE CASCADE 
+		)"""
+		self.conn.cursor().execute(query)
+		self.conn.commit()
+
+		query = """CREATE TABLE IF NOT EXISTS file(
+		  id INTEGER PRIMARY KEY,
+		  userId INTEGER,
+		  name TEXT NOT NULL,
+		  FOREIGN KEY(userId) REFERENCES user(id) 
+		  	ON UPDATE CASCADE 
+		  	ON DELETE CASCADE 
+		)"""
+		self.conn.cursor().execute(query)
+		self.conn.commit()
+		
+		query = """CREATE TABLE IF NOT EXISTS cloudsetMapFile(
+		  id INTEGER PRIMARY KEY,
+		  cloudsetId INTEGER,
+		  fileId INTEGER,
+		  FOREIGN KEY(cloudsetId) REFERENCES cloudset(id) 
+			  ON UPDATE CASCADE 
+			  ON DELETE CASCADE,
+		  FOREIGN KEY(fileId) REFERENCES file(id) 
+			  ON UPDATE CASCADE 
+			  ON DELETE CASCADE 
+		)"""
+		self.conn.cursor().execute(query)
+		self.conn.commit()
