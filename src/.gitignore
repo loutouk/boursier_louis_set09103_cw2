@@ -1,7 +1,0 @@
-# Compiled source #
-###################
-*.pyc
-
-# Uploads folder content #
-##########################
-uploads/*

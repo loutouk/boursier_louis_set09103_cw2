@@ -1,0 +1,6 @@
+# Compiled source #
+###################
+*.pyc
+
+# ignore files in folder uploads
+src/uploads/
