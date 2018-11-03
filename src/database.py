@@ -5,35 +5,38 @@ import sqlite3
 
 class Database:
 	# by default, the database is regenerated
-	def __init__(self, dbFileLocation, init = True):
+	def __init__(self, dbFileLocation, init = False):
 		self.dbFileLocation = dbFileLocation
 		self.conn = sqlite3.connect(self.dbFileLocation)
 		if init:
 			self.create_database()
-			self.fill_database()
 
 	# when the database object is destroyed, we also want to close the connection with the datatabse
 	def __del__(self):
 		self.conn.close()
 
-	def fill_database(self):
-		values = ["dummy"]
-		self.conn.cursor().execute('INSERT INTO mydemo (name) VALUES(?)', values)
+	def create_user(self, email, password):
+		res = self.conn.cursor().execute('INSERT INTO user (email, password) VALUES(?, ?)', (email, password,))
 		self.conn.commit()
+		return res
 
-	def get_all(self):
+	def get_user_password(self, email):
 		self.conn = sqlite3.connect(self.dbFileLocation)
-		result = self.conn.cursor().execute('SELECT * FROM mydemo').fetchall()
-		return result
+		res = self.conn.cursor().execute('SELECT password FROM user where email = ?', (email,)).fetchall()
+		return res
+
+	def user_exists(self, email):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		res = self.conn.cursor().execute('SELECT email FROM user where email = ?', (email,)).fetchall()
+		return res
 
 	def create_database(self):
 		query = """CREATE TABLE IF NOT EXISTS user(
 					  id INTEGER PRIMARY KEY,
-					  email TEXT NOT NULL,
+					  email TEXT NOT NULL UNIQUE,
 					  password TEXT NOT NULL
 					)"""
-		self.conn.cursor().execute(query)
-		self.conn.commit()
+		res = self.conn.cursor().execute(query)
 
 		query = """CREATE TABLE IF NOT EXISTS cloudset(
 		  id INTEGER PRIMARY KEY,
@@ -43,8 +46,7 @@ class Database:
 			  ON UPDATE CASCADE 
 			  ON DELETE CASCADE 
 		)"""
-		self.conn.cursor().execute(query)
-		self.conn.commit()
+		res = self.conn.cursor().execute(query)
 
 		query = """CREATE TABLE IF NOT EXISTS file(
 		  id INTEGER PRIMARY KEY,
@@ -54,8 +56,7 @@ class Database:
 		  	ON UPDATE CASCADE 
 		  	ON DELETE CASCADE 
 		)"""
-		self.conn.cursor().execute(query)
-		self.conn.commit()
+		res = self.conn.cursor().execute(query)
 		
 		query = """CREATE TABLE IF NOT EXISTS cloudsetMapFile(
 		  id INTEGER PRIMARY KEY,
@@ -68,5 +69,5 @@ class Database:
 			  ON UPDATE CASCADE 
 			  ON DELETE CASCADE 
 		)"""
-		self.conn.cursor().execute(query)
+		res = self.conn.cursor().execute(query)
 		self.conn.commit()
