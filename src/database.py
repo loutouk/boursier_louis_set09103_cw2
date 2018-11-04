@@ -43,9 +43,9 @@ class Database:
 		res = self.conn.cursor().execute('SELECT cloudset.name FROM cloudset INNER JOIN user ON user.id = cloudset.userId where user.email = ? AND cloudset.name = ?', (userEmail,setName,)).fetchall()
 		return res
 
-	def create_file(self, fileName, userEmail):
+	def create_file(self, fileName, driveId, userEmail):
 		self.conn = sqlite3.connect(self.dbFileLocation)
-		res = self.conn.cursor().execute('INSERT INTO file (name, userId)  VALUES(?, (select id from user where email = ?))', (fileName,userEmail,)).fetchall()
+		res = self.conn.cursor().execute('INSERT INTO file (name, driveId, userId)  VALUES(?, ?, (select id from user where email = ?))', (fileName,driveId,userEmail,)).fetchall()
 		self.conn.commit()
 		return res
 
@@ -87,6 +87,7 @@ class Database:
 		  id INTEGER PRIMARY KEY,
 		  userId INTEGER,
 		  name TEXT NOT NULL,
+		  driveId TEXT NOT NULL,
 		  UNIQUE(userId, name) ON CONFLICT IGNORE,
 		  FOREIGN KEY(userId) REFERENCES user(id) 
 		  	ON UPDATE CASCADE 

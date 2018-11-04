@@ -114,7 +114,8 @@ class Controller:
 				file.save(os.path.join(UPLOAD_FOLDER, filename))
 				file_metadata = {'name': filename, 'parents': [root_folder]}
 				media = MediaFileUpload(os.path.join(UPLOAD_FOLDER, filename))
-				file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+				driveFile = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+				driveId = driveFile["id"]
 				# TODO remove the file from uploads, now that it is on drive
 				if(file is None):
 					raise DriveFileAdd("Error: could not add the file " + filename + " to the drive")
@@ -122,7 +123,7 @@ class Controller:
 				else:
 					# file was added to the drive folder, so we should update the database
 					# create the file
-					db.create_file(filename, session["user"])
+					db.create_file(filename, driveId, session["user"])
 					# if the set already exists, the query will be ignored
 					for tag in tags:
 						db.create_set(tag, session["user"])
