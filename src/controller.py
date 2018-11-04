@@ -76,9 +76,23 @@ class Controller:
 
 		if request.method == 'POST':
 
-			root_folder = self.get_drive_folder_id(DRIVE_FOLDER)
+			db = Database("var/sqlite3.db")
 
+			# check if the post request has the file part
+			if 'fileToUpload' not in request.files:
+				flash('No file part')
+				return redirect(request.url)
+
+			file = request.files['fileToUpload']
+			# if user does not select file, browser also
+			# submit an empty part without filename
+			if file.filename == '':
+				flash('No selected file')
+				return redirect(request.url)
+
+			root_folder = self.get_drive_folder_id(DRIVE_FOLDER)
 			tags = []
+			# every files should have the default set to perform operation on them
 			tags.append(DEFAULT_SET)
 
 			retrievedTags = request.form.get('tags')
@@ -88,19 +102,15 @@ class Controller:
 					for tag in tagsList:
 						tags.append(tag.encode('ascii','ignore').strip())
 
-			# check if the post request has the file part
-			if 'fileToUpload' not in request.files:
-				flash('No file part')
-				return redirect(request.url)
-			file = request.files['fileToUpload']
-			print file
-			# if user does not select file, browser also
-			# submit an empty part without filename
-			if file.filename == '':
-				flash('No selected file')
-				return redirect(request.url)
 			if file and self.allowed_file(file.filename):
 				filename = secure_filename(file.filename)
+
+				# if filename already exists for this user in the datatabase, we cancel and inform the user
+				fileExists = db.file_exists(filename, session["user"])
+				if len(fileExists) > 0:
+					flash('Error. File with this name already exists.')
+					return redirect(url_for("homePage")) 
+
 				file.save(os.path.join(UPLOAD_FOLDER, filename))
 				file_metadata = {'name': filename, 'parents': [root_folder]}
 				media = MediaFileUpload(os.path.join(UPLOAD_FOLDER, filename))
@@ -110,7 +120,19 @@ class Controller:
 					raise DriveFileAdd("Error: could not add the file " + filename + " to the drive")
 					flash('Error. File not uploaded.')
 				else:
+					# file was added to the drive folder, so we should update the database
+					# create the file
+					db.create_file(filename, session["user"])
+					# if the set already exists, the query will be ignored
+					for tag in tags:
+						db.create_set(tag, session["user"])
+					# link the file to the tags
+					for tag in tags:
+						db.associate_set_to_file(tag, filename, session["user"])
 					flash('File uploaded.')
+		
+
+
 		return redirect(url_for("homePage")) 
 
 	def allowed_file(self, filename):
@@ -142,7 +164,7 @@ class Controller:
 				return self.indexPage()
 
 			hashedPassword = self.bcrypt.generate_password_hash(password)
-			res = db.create_user(email, hashedPassword)
+			res = db.create_user(email, hashedPassword, DEFAULT_SET)
 			if res:
 				flash('Account created. You can login.')
 			else:
