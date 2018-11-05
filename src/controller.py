@@ -33,6 +33,9 @@ class Controller:
 		Session(self.app)
 		self.bcrypt = Bcrypt(self.app)
 
+	def testPage(self):
+		return render_template('test.html')
+
 	def indexPage(self):
 		if session.get("user"):
 			return self.homePage()
@@ -175,3 +178,6 @@ class Controller:
 	def logout(self):
 		session.clear()
 		return self.indexPage()
+
+	def page_not_found(self):
+  		return render_template('404.html'), 404
