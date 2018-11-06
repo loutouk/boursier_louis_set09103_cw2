@@ -45,6 +45,42 @@ class Controller:
 		return render_template('register.html', )
 
 	def homePage(self):
+		db = Database("var/sqlite3.db")
+
+		filesList = db.get_user_files("a@a.fr")
+		files = {}
+		for currentFile in filesList:
+			files[currentFile[1]] = currentFile[0]
+		setsList = db.get_user_sets("a@a.fr")
+
+		sets = {}
+		for currentFile in setsList:
+			sets[currentFile[1]] = currentFile[0]
+
+		linksList = db.get_files_per_cloudset("a@a.fr")
+
+		# matrices files * sets whith 0 for no link and 1 for link
+		# initalises all values at 0, meaning that there is not link between the cloudset and the file
+		# hence the file is not directly in the set
+		linksT = {}
+		for link in linksList:
+			linksT[link[0]] = {}
+			#for j in range(len(files)):
+			#	linksT[i][j] = 0
+
+		# we browse the links fetched from the db to set the links where they are
+		for link in linksList:
+			linksT[link[0]][link[1]] = True
+
+		print linksT
+
+		#for j in range(len(sets)):
+		#	print "\n"
+		#	for i in range(len(files)):
+		#		print links[j][i]
+
+
+
 		# List all files
 		fileList = []
 		results = drive_service.files().list(pageSize=10, fields="nextPageToken, files(id, name, webViewLink)").execute()

@@ -64,6 +64,26 @@ class Database:
 		self.conn.commit()
 		return res
 
+	def get_user_files(self, userEmail):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		res = self.conn.cursor().execute('SELECT file.name, file.id FROM file LEFT JOIN user ON user.id = file.userId where user.email = ?', (userEmail,)).fetchall()
+		return res
+
+	def get_user_sets(self, userEmail):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		res = self.conn.cursor().execute('SELECT cloudset.name, cloudset.id FROM cloudset LEFT JOIN user ON user.id = cloudset.userId where user.email = ?', (userEmail,)).fetchall()
+		return res
+
+	def get_files_per_cloudset(self, email):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		res = self.conn.cursor().execute('''
+			SELECT DISTINCT cloudsetMapFile.cloudsetId, cloudsetMapFile.fileId FROM cloudsetMapFile 
+			LEFT JOIN file on file.id = cloudsetMapFile.fileId 
+			LEFT JOIN user on user.id = file.userId WHERE email = ?
+			ORDER BY cloudsetMapFile.cloudsetId'''
+			, (email,)).fetchall()
+		return res
+
 	def create_database(self):
 		query = """CREATE TABLE IF NOT EXISTS user(
 					  id INTEGER PRIMARY KEY,
