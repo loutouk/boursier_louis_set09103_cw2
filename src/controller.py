@@ -59,14 +59,12 @@ class Controller:
 
 		linksList = db.get_files_per_cloudset("a@a.fr")
 
-		# matrices files * sets whith 0 for no link and 1 for link
-		# initalises all values at 0, meaning that there is not link between the cloudset and the file
-		# hence the file is not directly in the set
+		# dict {cloudset id , {file id, is linked ?}}
 		linksT = {}
+		parentSet = {}
 		for link in linksList:
 			linksT[link[0]] = {}
-			#for j in range(len(files)):
-			#	linksT[i][j] = 0
+			parentSet[link[0]] = {}
 
 		# we browse the links fetched from the db to set the links where they are
 		for link in linksList:
@@ -74,11 +72,24 @@ class Controller:
 
 		print linksT
 
-		#for j in range(len(sets)):
-		#	print "\n"
-		#	for i in range(len(files)):
-		#		print links[j][i]
+		# now, we want we to place the cloudset into their parent set if they have some
 
+		# first sort from the shortest to the biggest considering the size of their dictionary
+		sortedDictOrder = []
+		for dict in sorted(linksT, key=lambda k: len(linksT[k]), reverse=False):
+			sortedDictOrder.append(dict)
+
+
+		sortedDict = []
+		for i in sortedDictOrder:
+			sortedDict.append(linksT[i])
+
+		# finding parent
+		for dic in sortedDict:
+			for otherDics in sortedDict:
+				if otherDics != dic:
+					if dic.viewitems() < otherDics.viewitems():
+						print "parent " + str(otherDics) + " for " + str(dic)
 
 
 		# List all files
