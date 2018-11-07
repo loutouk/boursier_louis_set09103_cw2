@@ -47,17 +47,17 @@ class Controller:
 	def homePage(self):
 		db = Database("var/sqlite3.db")
 
-		filesList = db.get_user_files("a@a.fr")
+		filesList = db.get_user_files("louisboursier@hotmail.fr")
 		files = {}
 		for currentFile in filesList:
 			files[currentFile[1]] = currentFile[0]
-		setsList = db.get_user_sets("a@a.fr")
+		setsList = db.get_user_sets("louisboursier@hotmail.fr")
 
 		sets = {}
 		for currentFile in setsList:
 			sets[currentFile[1]] = currentFile[0]
 
-		linksList = db.get_files_per_cloudset("a@a.fr")
+		linksList = db.get_files_per_cloudset("louisboursier@hotmail.fr")
 
 		# dict {cloudset id , {file id, is linked ?}}
 		linksT = {}
@@ -85,11 +85,17 @@ class Controller:
 			sortedDict.append(linksT[i])
 
 		# finding parent
-		for dic in sortedDict:
-			for otherDics in sortedDict:
+		for i in range(len(sortedDict)):
+			dic = sortedDict[i]
+			maxParentSize = 100000000000000
+			for j in range(len(sortedDict)):
+				otherDics = sortedDict[j]
 				if otherDics != dic:
-					if dic.viewitems() < otherDics.viewitems():
-						print "parent " + str(otherDics) + " for " + str(dic)
+					if dic.viewitems() < otherDics.viewitems() and len(otherDics) <= maxParentSize:
+						maxParentSize = len(otherDics)
+						print "for dic " + str(sortedDictOrder[i]) + " size = " + str(maxParentSize)
+						print str(sortedDictOrder[j]) + " parent of " + str(sortedDictOrder[i])
+
 
 
 		# List all files
