@@ -20,6 +20,11 @@ ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 API_SCOPES = 'https://www.googleapis.com/auth/drive'
 # Every files should at least belong to the default set
 DEFAULT_SET = "DefaultSet"
+# The default set should always be the parent of all the others cloudset
+# so we give it a file that only it can be linked to
+# and ensure that the default set will be linked to all others file add in the future
+# TODO set security to ensure those rules
+DEFAULT_FILE = "DefaultFile"
 
 # Drive API
 store = file.Storage('token.json')
@@ -76,6 +81,7 @@ class Controller:
 		# we browse the links fetched from the db to set the links where they are
 		for link in linksList:
 			linksT[link[0]][link[1]] = True
+			cloudsets[link[0]].set = linksT[link[0]]
 
 		# now, we want we to place the cloudset into their parent set if they have some
 
@@ -101,11 +107,15 @@ class Controller:
 						cloudsets[sortedDictOrder[j]].children.append(cloudsets[sortedDictOrder[i]])
 						
 
-		f = open("static/data/flare2.json", "a")
-		for i in cloudsets:
-			cloudset = cloudsets[i]
-			f.write(cloudset.toJSON())
-			#print cloudset
+		# find the biggest cloudset, and use it to create the JSON file
+		maxSetSize = -1;
+		biggestSet = cloudsets[sortedDictOrder[len(sortedDictOrder)-1]]
+		
+		# erase the content
+		open(os.path.join('static','data','data.json'), 'w').close()
+		# write
+		f = open(os.path.join('static','data','data.json'), "a")
+		f.write(biggestSet.toJSON())
 
 
 
@@ -234,7 +244,7 @@ class Controller:
 				return self.indexPage()
 
 			hashedPassword = self.bcrypt.generate_password_hash(password)
-			res = db.create_user(email, hashedPassword, DEFAULT_SET)
+			res = db.create_user(email, hashedPassword, DEFAULT_SET, DEFAULT_FILE)
 			if res:
 				flash('Account created. You can login.')
 			else:

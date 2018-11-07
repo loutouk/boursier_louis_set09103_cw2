@@ -1,0 +1,44 @@
+{
+ "name": "DefaultSet", 
+ "children": [
+  {
+   "name": "rome", 
+   "size": 1
+  }, 
+  {
+   "name": "moutains", 
+   "size": 1
+  }, 
+  {
+   "name": "ice", 
+   "size": 1
+  }, 
+  {
+   "name": "blue", 
+   "children": [
+    {
+     "name": "water", 
+     "size": 1
+    }
+   ]
+  }, 
+  {
+   "name": "mountains", 
+   "children": [
+    {
+     "name": "windmills", 
+     "size": 1
+    }, 
+    {
+     "name": "nature", 
+     "children": [
+      {
+       "name": "lake", 
+       "size": 1
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

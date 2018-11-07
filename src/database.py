@@ -15,12 +15,16 @@ class Database:
 	def __del__(self):
 		self.conn.close()
 
-	def create_user(self, email, password, initialSet):
+	def create_user(self, email, password, initialSet, initialFile):
 		# we create automatically and transparently the first set for the user
 		# we want to have both operations successful, or we cancel everything, hence the transaction
 		res = self.conn.cursor().execute('INSERT INTO user (email, password) VALUES(?, ?)', (email, password,))
 		res = self.conn.cursor().execute('INSERT INTO cloudset (name, userId) VALUES(?, (SELECT id from user where email = ?))', (initialSet,email,))
+		# create a file and link it to the default set so that the default set is the parent of
+		# TODO hide the file linked to the default set so that the default set always remain the super parent
 		self.conn.commit()
+		self.create_file(initialFile, "dummyId", email)
+		self.associate_set_to_file(initialSet, initialFile, email)
 		return res
 
 	def get_user_password(self, email):
