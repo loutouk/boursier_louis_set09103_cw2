@@ -47,7 +47,7 @@ var pack = d3.pack()
     .size([diameter - margin, diameter - margin])
     .padding(2);
 
-d3.json("{{ url_for('static', filename='data/flare.json') | safe}}", function(error, root) {
+d3.json("{{ url_for('static', filename='data/flare2.json') | safe}}", function(error, root) {
   if (error) throw error;
 
   root = d3.hierarchy(root)

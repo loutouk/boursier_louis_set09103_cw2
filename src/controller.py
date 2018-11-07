@@ -10,6 +10,8 @@ from apiclient.http import MediaFileUpload
 from customErrors import DriveFolderNil, DriveFileAdd
 import unicodedata
 from database import Database
+from cloudset import Cloudset
+import json
 
 UPLOAD_FOLDER = 'uploads'
 DRIVE_FOLDER = "SetCloudDatas"
@@ -47,15 +49,20 @@ class Controller:
 	def homePage(self):
 		db = Database("var/sqlite3.db")
 
+		# cloudsets{id => Cloudset()}
+		cloudsets = {}
+
 		filesList = db.get_user_files("louisboursier@hotmail.fr")
+		# file{name => id}
 		files = {}
 		for currentFile in filesList:
 			files[currentFile[1]] = currentFile[0]
 		setsList = db.get_user_sets("louisboursier@hotmail.fr")
-
+		# set{name => id}
 		sets = {}
-		for currentFile in setsList:
-			sets[currentFile[1]] = currentFile[0]
+		for currentSet in setsList:
+			cloudsets[currentSet[1]] = Cloudset(currentSet[0], currentSet[1])
+			sets[currentSet[1]] = currentSet[0]
 
 		linksList = db.get_files_per_cloudset("louisboursier@hotmail.fr")
 
@@ -69,8 +76,6 @@ class Controller:
 		# we browse the links fetched from the db to set the links where they are
 		for link in linksList:
 			linksT[link[0]][link[1]] = True
-
-		print linksT
 
 		# now, we want we to place the cloudset into their parent set if they have some
 
@@ -93,8 +98,16 @@ class Controller:
 				if otherDics != dic:
 					if dic.viewitems() < otherDics.viewitems() and len(otherDics) <= maxParentSize:
 						maxParentSize = len(otherDics)
-						print "for dic " + str(sortedDictOrder[i]) + " size = " + str(maxParentSize)
-						print str(sortedDictOrder[j]) + " parent of " + str(sortedDictOrder[i])
+						cloudsets[sortedDictOrder[j]].children.append(cloudsets[sortedDictOrder[i]])
+						
+
+		f = open("static/data/flare2.json", "a")
+		for i in cloudsets:
+			cloudset = cloudsets[i]
+			f.write(cloudset.toJSON())
+			#print cloudset
+
+
 
 
 
