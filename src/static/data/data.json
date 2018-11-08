@@ -2,42 +2,63 @@
  "name": "DefaultSet", 
  "children": [
   {
-   "name": "blanc", 
+   "name": "planete", 
    "size": 1
   }, 
   {
-   "name": "arbre", 
+   "name": "eerie", 
    "size": 1
   }, 
   {
-   "name": "", 
-   "size": 1
+   "name": "planet", 
+   "size": 2
   }, 
   {
-   "name": "montagne", 
+   "name": "dry", 
    "children": [
     {
-     "name": "arbre", 
+     "name": "planete", 
+     "size": 1
+    }, 
+    {
+     "name": "eerie", 
      "size": 1
     }
    ]
   }, 
   {
-   "name": "noir", 
+   "name": "earth", 
    "size": 3
   }, 
   {
-   "name": "nature", 
+   "name": "space", 
    "children": [
     {
-     "name": "arbre", 
+     "name": "earth", 
+     "size": 3
+    }
+   ]
+  }, 
+  {
+   "name": "satelite", 
+   "children": [
+    {
+     "name": "planete", 
      "size": 1
     }, 
     {
-     "name": "montagne", 
+     "name": "eerie", 
+     "size": 1
+    }, 
+    {
+     "name": "dry", 
      "children": [
       {
-       "name": "arbre", 
+       "name": "planete", 
+       "size": 1
+      }, 
+      {
+       "name": "eerie", 
        "size": 1
       }
      ]
@@ -45,39 +66,69 @@
    ]
   }, 
   {
-   "name": "chien", 
+   "name": "nasa", 
    "children": [
     {
-     "name": "blanc", 
+     "name": "planete", 
      "size": 1
     }, 
     {
-     "name": "noir", 
-     "size": 3
-    }
-   ]
-  }, 
-  {
-   "name": "photo", 
-   "children": [
-    {
-     "name": "blanc", 
+     "name": "eerie", 
      "size": 1
     }, 
     {
-     "name": "noir", 
-     "size": 3
+     "name": "planet", 
+     "size": 2
     }, 
     {
-     "name": "chien", 
+     "name": "dry", 
      "children": [
       {
-       "name": "blanc", 
+       "name": "planete", 
        "size": 1
       }, 
       {
-       "name": "noir", 
+       "name": "eerie", 
+       "size": 1
+      }
+     ]
+    }, 
+    {
+     "name": "earth", 
+     "size": 3
+    }, 
+    {
+     "name": "space", 
+     "children": [
+      {
+       "name": "earth", 
        "size": 3
+      }
+     ]
+    }, 
+    {
+     "name": "satelite", 
+     "children": [
+      {
+       "name": "planete", 
+       "size": 1
+      }, 
+      {
+       "name": "eerie", 
+       "size": 1
+      }, 
+      {
+       "name": "dry", 
+       "children": [
+        {
+         "name": "planete", 
+         "size": 1
+        }, 
+        {
+         "name": "eerie", 
+         "size": 1
+        }
+       ]
       }
      ]
     }
