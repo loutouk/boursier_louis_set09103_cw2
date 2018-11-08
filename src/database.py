@@ -78,6 +78,18 @@ class Database:
 		res = self.conn.cursor().execute('SELECT cloudset.name, cloudset.id FROM cloudset LEFT JOIN user ON user.id = cloudset.userId where user.email = ?', (userEmail,)).fetchall()
 		return res
 
+	def get_user_files_by_sets(self, userEmail, sets):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		sets_string = repr(sets).replace('[','').replace(']','').replace('\'','"')
+		res = self.conn.cursor().execute('''
+			SELECT DISTINCT file.name, file.id FROM file 
+			LEFT JOIN user ON user.id = file.userId 
+			LEFT JOIN cloudsetMapFile ON cloudsetMapFile.fileId = file.id 
+			LEFT JOIN cloudset ON cloudset.id = cloudsetMapFile.cloudsetId 
+			where user.email = ? and cloudset.name IN (%s)''' % sets_string 
+			, (userEmail,)).fetchall()
+		return res
+
 	def get_files_per_cloudset(self, email):
 		self.conn = sqlite3.connect(self.dbFileLocation)
 		res = self.conn.cursor().execute('''

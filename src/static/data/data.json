@@ -2,39 +2,82 @@
  "name": "DefaultSet", 
  "children": [
   {
-   "name": "rome", 
+   "name": "blanc", 
    "size": 1
   }, 
   {
-   "name": "moutains", 
+   "name": "arbre", 
    "size": 1
   }, 
   {
-   "name": "ice", 
+   "name": "", 
    "size": 1
   }, 
   {
-   "name": "blue", 
+   "name": "montagne", 
    "children": [
     {
-     "name": "water", 
+     "name": "arbre", 
      "size": 1
     }
    ]
   }, 
   {
-   "name": "mountains", 
+   "name": "noir", 
+   "size": 3
+  }, 
+  {
+   "name": "nature", 
    "children": [
     {
-     "name": "windmills", 
+     "name": "arbre", 
      "size": 1
     }, 
     {
-     "name": "nature", 
+     "name": "montagne", 
      "children": [
       {
-       "name": "lake", 
+       "name": "arbre", 
        "size": 1
+      }
+     ]
+    }
+   ]
+  }, 
+  {
+   "name": "chien", 
+   "children": [
+    {
+     "name": "blanc", 
+     "size": 1
+    }, 
+    {
+     "name": "noir", 
+     "size": 3
+    }
+   ]
+  }, 
+  {
+   "name": "photo", 
+   "children": [
+    {
+     "name": "blanc", 
+     "size": 1
+    }, 
+    {
+     "name": "noir", 
+     "size": 3
+    }, 
+    {
+     "name": "chien", 
+     "children": [
+      {
+       "name": "blanc", 
+       "size": 1
+      }, 
+      {
+       "name": "noir", 
+       "size": 3
       }
      ]
     }

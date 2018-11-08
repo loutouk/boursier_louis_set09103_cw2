@@ -40,9 +40,6 @@ class Controller:
 		Session(self.app)
 		self.bcrypt = Bcrypt(self.app)
 
-	def testPage(self):
-		return render_template('test.html')
-
 	def indexPage(self):
 		if session.get("user"):
 			return self.homePage()
@@ -57,19 +54,19 @@ class Controller:
 		# cloudsets{id => Cloudset()}
 		cloudsets = {}
 
-		filesList = db.get_user_files("louisboursier@hotmail.fr")
+		filesList = db.get_user_files(session["user"])
 		# file{name => id}
 		files = {}
 		for currentFile in filesList:
 			files[currentFile[1]] = currentFile[0]
-		setsList = db.get_user_sets("louisboursier@hotmail.fr")
+		setsList = db.get_user_sets(session["user"])
 		# set{name => id}
 		sets = {}
 		for currentSet in setsList:
 			cloudsets[currentSet[1]] = Cloudset(currentSet[0], currentSet[1])
 			sets[currentSet[1]] = currentSet[0]
 
-		linksList = db.get_files_per_cloudset("louisboursier@hotmail.fr")
+		linksList = db.get_files_per_cloudset(session["user"])
 
 		# dict {cloudset id , {file id, is linked ?}}
 		linksT = {}
@@ -98,39 +95,22 @@ class Controller:
 		# finding parent
 		for i in range(len(sortedDict)):
 			dic = sortedDict[i]
-			maxParentSize = 100000000000000
 			for j in range(len(sortedDict)):
 				otherDics = sortedDict[j]
 				if otherDics != dic:
-					if dic.viewitems() < otherDics.viewitems() and len(otherDics) <= maxParentSize:
-						maxParentSize = len(otherDics)
+					if dic.viewitems() < otherDics.viewitems():
 						cloudsets[sortedDictOrder[j]].children.append(cloudsets[sortedDictOrder[i]])
 						
 
 		# find the biggest cloudset, and use it to create the JSON file
-		maxSetSize = -1;
 		biggestSet = cloudsets[sortedDictOrder[len(sortedDictOrder)-1]]
 		
-		# erase the content
-		open(os.path.join('static','data','data.json'), 'w').close()
-		# write
-		f = open(os.path.join('static','data','data.json'), "a")
+		# erase the content and write
+		f = open(os.path.join('static','data','data.json'), "w")
 		f.write(biggestSet.toJSON())
 
 
-
-
-
-		# List all files
-		fileList = []
-		results = drive_service.files().list(pageSize=10, fields="nextPageToken, files(id, name, webViewLink)").execute()
-		items = results.get('files', [])
-		if not items:
-			fileList.append('No files found.')
-		else:
-			for item in items:
-				fileList.append([item['name'],item['id'],item['webViewLink']])
-		return render_template('home.html', content=fileList)
+		return render_template('home.html', )
 
 	def init_drive_folder(self):
 		file_metadata = {
@@ -140,15 +120,15 @@ class Controller:
 		file = drive_service.files().create(body=file_metadata, fields='id').execute()
 
 	def get_drive_folder_id(self, folder_name):
-		fileList = []
+		# look for the google drive folder where we store our data
 		results = drive_service.files().list(fields="files(id, name)").execute()
-		items = results.get('files', [])
-		if not items:
+		allDriveFiles = results.get('files', [])
+		if not allDriveFiles:
 			raise DriveFolderNil("Error: no root file for the name " + folder_name)
 		else:
-			for item in items:
-				if item['name'] == folder_name:
-					return item['id']
+			for file in allDriveFiles:
+				if file['name'] == folder_name:
+					return file['id']
 			raise DriveFolderNil("Error: no root file for the name " + folder_name)
 
 	def upload_file(self):
@@ -164,7 +144,7 @@ class Controller:
 
 			file = request.files['fileToUpload']
 			# if user does not select file, browser also
-			# submit an empty part without filename
+			# submit an empty part without filename 
 			if file.filename == '':
 				flash('No selected file')
 				return redirect(request.url)
@@ -218,6 +198,29 @@ class Controller:
 	def allowed_file(self, filename):
 		return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+	def search_files_by_sets(self):
+		if request.method == 'POST':
+			db = Database("var/sqlite3.db", True)
+			# no htmlentities() or equivalent because flask uses its own xss protection while using render_template()
+			setsList = request.form.get('cloudsets')
+			sets = setsList.split(",")
+			setsList = []
+			for currentSet in sets:
+				setsList.append(currentSet.encode('ascii','ignore').strip())
+			files = db.get_user_files_by_sets(session["user"], setsList)
+			# List all files
+			fileList = []
+			results = drive_service.files().list(pageSize=10, fields="nextPageToken, files(name, webViewLink)").execute()
+			items = results.get('files', [])
+			if not items:
+				fileList.append('No files found.')
+			else:
+				for item in items:
+						if any(item['name'] in s for s in files):
+							fileList.append([item['name'],item['webViewLink']])
+			return render_template('test.html', content=fileList)
+
 	def login(self):
 		if request.method == 'POST':
 			db = Database("var/sqlite3.db", True)
@@ -246,6 +249,8 @@ class Controller:
 			hashedPassword = self.bcrypt.generate_password_hash(password)
 			res = db.create_user(email, hashedPassword, DEFAULT_SET, DEFAULT_FILE)
 			if res:
+				# we create its drive folder where we are going to store the datas
+				self.init_drive_folder()
 				flash('Account created. You can login.')
 			else:
 				flash('Failed to create account.')
