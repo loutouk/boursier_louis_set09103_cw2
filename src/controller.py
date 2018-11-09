@@ -122,25 +122,12 @@ class Controller:
 		# cloudsets{id => Cloudset()}
 		cloudsets = self.getCloudsets(sets)
 		
-
 		# find the biggest cloudset, and use it to create the JSON file
-		# biggestSet = cloudsets[sortedDictOrder[len(sortedDictOrder)-1]]
 		biggestSet = cloudsets[sets[DEFAULT_SET]]
-		setOperators = ["|", "&", "-", "^"]
 
-		
 		# erase the content and write
 		f = open(os.path.join('static','data','data.json'), "w")
 		f.write(biggestSet.toJSON())
-
-		# initialize A and B
-		A = set(cloudsets[sets["earth"]].set.keys())
-		B = set(cloudsets[sets["planet"]].set.keys())
-
-		# use | operator
-		# Output: {1, 2, 3, 4, 5, 6, 7, 8}
-		print(A | B)
-
 
 		return render_template('home.html', )
 
@@ -148,20 +135,69 @@ class Controller:
 		if request.method == 'POST':
 			db = Database("var/sqlite3.db", True)
 			# no htmlentities() or equivalent because flask uses its own xss protection while using render_template()
-			setsList = request.form.get('cloudsets')
+			inputSetsList = request.form.get('cloudsets')
 			
-			authorizedString = bool(re.match('^(?!.*([,\|\&\^\-])\\1{1,})[a-zA-Z0-9 ,\&\-\^\|]+$', setsList))
+			authorizedString = bool(re.match('^(?!.*([,\|\&\^\-])\\1{1,})[a-zA-Z0-9 ,\&\-\^\|]+$', inputSetsList))
 			if authorizedString == False:
 				return render_template("home.html")
 
-			# detect if its a simple request or a advanced set opertor based request
-			sets = setsList.split(",")
-			setsList = []
-			for currentSet in sets:
-				setsList.append(currentSet.encode('ascii','ignore').strip())
-			files = db.get_user_files_by_sets(session["user"], setsList)
 			# List all files
 			fileList = []
+			files = []
+
+			# detect if its a simple request or a advanced set opertor based request
+			setOperatorRequest = bool(re.match('^.*[\&\-\^\|]+.*$', inputSetsList))
+
+			if(setOperatorRequest == False):
+				sets = inputSetsList.split(",")
+				setsList = []
+				for currentSet in sets:
+					setsList.append(currentSet.encode('ascii','ignore').strip())
+				files = db.get_user_files_by_sets(session["user"], setsList)
+				
+			else:
+				# the coma corresponds to the union operator (|in Python)
+				orderedSetName = []
+				orderedSetOperation = []
+				leftTermBeginIndex = 0;
+
+				for i in range(len(inputSetsList)):
+					if inputSetsList[i] in [",", "&", "^", "-", "|"]:
+							orderedSetName.append(inputSetsList[leftTermBeginIndex:i].encode('ascii','ignore').strip())
+							orderedSetOperation.append(inputSetsList[i].encode('ascii','ignore'))
+							leftTermBeginIndex = i + 1
+				# add the last set name
+				orderedSetName.append(inputSetsList[leftTermBeginIndex:len(inputSetsList)].encode('ascii','ignore').strip())
+				# set{name => id}
+				sets = self.getSetsDict()
+				# cloudsets{id => Cloudset()}
+				cloudsets = self.getCloudsets(sets)
+				# create an empty set for the Cloudset name which does not exist
+				if orderedSetName[0] in sets:
+					leftSet = set(cloudsets[sets[orderedSetName[0]]].set.keys())
+				else:
+					leftSet = set()
+
+				for i in range(1, len(orderedSetName)):
+					if orderedSetName[i] in sets:
+						rightSet = set(cloudsets[sets[orderedSetName[i]]].set.keys())
+					# create an empty set for the Cloudset name which does not exist
+					else:
+						rightSet = set()
+					setOperator = orderedSetOperation[i-1]
+					if(setOperator == "," or setOperator == "|"):
+						leftSet = leftSet.union(rightSet)
+					elif(setOperator == "^"):
+						leftSet = leftSet.symmetric_difference(rightSet)
+					elif(setOperator == "&"):
+						leftSet = leftSet.intersection(rightSet)
+					elif(setOperator == "-"):
+						leftSet = leftSet.difference(rightSet)
+						
+				files = db.get_user_files_by_ids(session["user"], list(leftSet))
+
+			
+			# Ask Google Drive API's all files, and return them which have the same name than those in our list
 			results = drive_service.files().list(pageSize=10, fields="nextPageToken, files(name, webViewLink)").execute()
 			items = results.get('files', [])
 			if not items:
@@ -170,6 +206,7 @@ class Controller:
 				for item in items:
 						if any(item['name'] in s for s in files):
 							fileList.append([item['name'],item['webViewLink']])
+
 			return render_template('files.html', content=fileList)
 
 	def init_drive_folder(self):

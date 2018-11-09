@@ -90,6 +90,16 @@ class Database:
 			, (userEmail,)).fetchall()
 		return res
 
+	def get_user_files_by_ids(self, userEmail, filesIds):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		filesIds_string = repr(filesIds).replace('[','').replace(']','').replace('\'','"')
+		res = self.conn.cursor().execute('''
+			SELECT DISTINCT file.name, file.id FROM file 
+			LEFT JOIN user ON user.id = file.userId 
+			where user.email = ? and file.id IN (%s)''' % filesIds_string 
+			, (userEmail,)).fetchall()
+		return res
+
 	def get_files_per_cloudset(self, email):
 		self.conn = sqlite3.connect(self.dbFileLocation)
 		res = self.conn.cursor().execute('''
