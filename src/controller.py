@@ -12,6 +12,7 @@ import unicodedata
 from database import Database
 from cloudset import Cloudset
 import json
+import re
 
 UPLOAD_FOLDER = 'uploads'
 DRIVE_FOLDER = "SetCloudDatas"
@@ -40,6 +41,7 @@ class Controller:
 		Session(self.app)
 		self.bcrypt = Bcrypt(self.app)
 
+
 	def indexPage(self):
 		if session.get("user"):
 			return self.homePage()
@@ -48,49 +50,59 @@ class Controller:
 	def registerPage(self):
 		return render_template('register.html', )
 
-	def homePage(self):
+	def getFilesDict(self):
+		db = Database("var/sqlite3.db")
+		filesList = db.get_user_files(session["user"])
+		# file{name => id}
+		files = {}
+		for currentFile in filesList:
+			files[currentFile[0]] = currentFile[1]
+		return files
+
+	def getSetsDict(self):
+		db = Database("var/sqlite3.db")
+		setsList = db.get_user_sets(session["user"])
+		# set{name => id}
+		sets = {}
+		for currentSet in setsList:
+			sets[currentSet[0]] = currentSet[1]
+		return sets
+
+	def getCloudsets(self, sets):
 		db = Database("var/sqlite3.db")
 
 		# cloudsets{id => Cloudset()}
 		cloudsets = {}
 
-		filesList = db.get_user_files(session["user"])
-		# file{name => id}
-		files = {}
-		for currentFile in filesList:
-			files[currentFile[1]] = currentFile[0]
-		setsList = db.get_user_sets(session["user"])
-		# set{name => id}
-		sets = {}
-		for currentSet in setsList:
-			cloudsets[currentSet[1]] = Cloudset(currentSet[0], currentSet[1])
-			sets[currentSet[1]] = currentSet[0]
+		for value, key in sets.items():
+			cloudsets[key] = Cloudset(value, key)
 
 		linksList = db.get_files_per_cloudset(session["user"])
 
 		# dict {cloudset id , {file id, is linked ?}}
-		linksT = {}
+		cloudsetLinks = {}
+
 		parentSet = {}
 		for link in linksList:
-			linksT[link[0]] = {}
+			cloudsetLinks[link[0]] = {}
 			parentSet[link[0]] = {}
 
 		# we browse the links fetched from the db to set the links where they are
 		for link in linksList:
-			linksT[link[0]][link[1]] = True
-			cloudsets[link[0]].set = linksT[link[0]]
+			cloudsetLinks[link[0]][link[1]] = True
+			cloudsets[link[0]].set = cloudsetLinks[link[0]]
 
 		# now, we want we to place the cloudset into their parent set if they have some
 
 		# first sort from the shortest to the biggest considering the size of their dictionary
 		sortedDictOrder = []
-		for dict in sorted(linksT, key=lambda k: len(linksT[k]), reverse=False):
+		for dict in sorted(cloudsetLinks, key=lambda k: len(cloudsetLinks[k]), reverse=False):
 			sortedDictOrder.append(dict)
 
 
 		sortedDict = []
 		for i in sortedDictOrder:
-			sortedDict.append(linksT[i])
+			sortedDict.append(cloudsetLinks[i])
 
 		# finding parent
 		for i in range(len(sortedDict)):
@@ -98,19 +110,67 @@ class Controller:
 			for j in range(len(sortedDict)):
 				otherDics = sortedDict[j]
 				if otherDics != dic:
-					if dic.viewitems() < otherDics.viewitems():
+					if dic.viewitems() < otherDics.viewitems() and len(otherDics):
 						cloudsets[sortedDictOrder[j]].children.append(cloudsets[sortedDictOrder[i]])
-						
+
+		return cloudsets
+
+	def homePage(self):
+		db = Database("var/sqlite3.db")
+		# set{name => id}
+		sets = self.getSetsDict()
+		# cloudsets{id => Cloudset()}
+		cloudsets = self.getCloudsets(sets)
+		
 
 		# find the biggest cloudset, and use it to create the JSON file
-		biggestSet = cloudsets[sortedDictOrder[len(sortedDictOrder)-1]]
+		# biggestSet = cloudsets[sortedDictOrder[len(sortedDictOrder)-1]]
+		biggestSet = cloudsets[sets[DEFAULT_SET]]
+		setOperators = ["|", "&", "-", "^"]
+
 		
 		# erase the content and write
 		f = open(os.path.join('static','data','data.json'), "w")
 		f.write(biggestSet.toJSON())
 
+		# initialize A and B
+		A = set(cloudsets[sets["earth"]].set.keys())
+		B = set(cloudsets[sets["planet"]].set.keys())
+
+		# use | operator
+		# Output: {1, 2, 3, 4, 5, 6, 7, 8}
+		print(A | B)
+
 
 		return render_template('home.html', )
+
+	def search_files_by_sets(self):
+		if request.method == 'POST':
+			db = Database("var/sqlite3.db", True)
+			# no htmlentities() or equivalent because flask uses its own xss protection while using render_template()
+			setsList = request.form.get('cloudsets')
+			
+			authorizedString = bool(re.match('^(?!.*([,\|\&\^\-])\\1{1,})[a-zA-Z0-9 ,\&\-\^\|]+$', setsList))
+			if authorizedString == False:
+				return render_template("home.html")
+
+			# detect if its a simple request or a advanced set opertor based request
+			sets = setsList.split(",")
+			setsList = []
+			for currentSet in sets:
+				setsList.append(currentSet.encode('ascii','ignore').strip())
+			files = db.get_user_files_by_sets(session["user"], setsList)
+			# List all files
+			fileList = []
+			results = drive_service.files().list(pageSize=10, fields="nextPageToken, files(name, webViewLink)").execute()
+			items = results.get('files', [])
+			if not items:
+				fileList.append('No files found.')
+			else:
+				for item in items:
+						if any(item['name'] in s for s in files):
+							fileList.append([item['name'],item['webViewLink']])
+			return render_template('files.html', content=fileList)
 
 	def init_drive_folder(self):
 		file_metadata = {
@@ -197,29 +257,6 @@ class Controller:
 
 	def allowed_file(self, filename):
 		return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-	def search_files_by_sets(self):
-		if request.method == 'POST':
-			db = Database("var/sqlite3.db", True)
-			# no htmlentities() or equivalent because flask uses its own xss protection while using render_template()
-			setsList = request.form.get('cloudsets')
-			sets = setsList.split(",")
-			setsList = []
-			for currentSet in sets:
-				setsList.append(currentSet.encode('ascii','ignore').strip())
-			files = db.get_user_files_by_sets(session["user"], setsList)
-			# List all files
-			fileList = []
-			results = drive_service.files().list(pageSize=10, fields="nextPageToken, files(name, webViewLink)").execute()
-			items = results.get('files', [])
-			if not items:
-				fileList.append('No files found.')
-			else:
-				for item in items:
-						if any(item['name'] in s for s in files):
-							fileList.append([item['name'],item['webViewLink']])
-			return render_template('test.html', content=fileList)
 
 	def login(self):
 		if request.method == 'POST':
