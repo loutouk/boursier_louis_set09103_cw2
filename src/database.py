@@ -68,6 +68,17 @@ class Database:
 		self.conn.commit()
 		return res
 
+	def disassociate_set_to_file(self, setName, fileName, userEmail):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		res = self.conn.cursor().execute('''DELETE FROM cloudsetMapFile WHERE 
+			cloudsetMapFile.fileId IN 
+			(select file.id from file INNER JOIN user ON user.id = file.userId where user.email = :email and file.name = :fileName) AND 
+			cloudsetMapFile.cloudsetId IN 
+			(select cloudset.id from cloudset INNER JOIN user ON user.id = cloudset.userId where user.email = :email and cloudset.name = :setName)''', 
+			{"email":userEmail, "setName":setName, "fileName":fileName})
+		self.conn.commit()
+		return res
+
 	def get_user_files(self, userEmail):
 		self.conn = sqlite3.connect(self.dbFileLocation)
 		res = self.conn.cursor().execute('SELECT file.name, file.id FROM file LEFT JOIN user ON user.id = file.userId where user.email = ?', (userEmail,)).fetchall()

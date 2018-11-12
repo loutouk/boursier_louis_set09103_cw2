@@ -208,7 +208,11 @@ class Controller:
 						if any(item['name'] in s for s in files):
 							fileList.append([item['name'],item['webViewLink']])
 
-			return render_template('files.html', files=fileList, fileMapSets=fileMapSets, sets=sets, defaultSet=DEFAULT_SET)
+			sortedSet = []
+			for value, key in sorted(sets.items()):
+				sortedSet.append(value)
+
+			return render_template('files.html', files=fileList, fileMapSets=fileMapSets, sets=sortedSet, defaultSet=DEFAULT_SET)
 
 	def init_drive_folder(self):
 		file_metadata = {
@@ -330,6 +334,20 @@ class Controller:
 			else:
 				flash('Failed to create account.')
 		return self.indexPage()
+
+	def linkFileToCloudset(self):
+		fileName = request.args.get('fileName')
+		setName = request.args.get('setName')
+		toLinked = request.args.get('toLinked')
+		if fileName and setName and toLinked and setName != DEFAULT_SET:
+			db = Database("var/sqlite3.db", True)
+			if(toLinked == "true"):
+				res = db.associate_set_to_file(setName, fileName, session["user"])
+				return "OK"
+			elif(toLinked == "false"):
+				res = db.disassociate_set_to_file(setName, fileName, session["user"])
+				return "OK"
+		return "NOK"
 
 	def logout(self):
 		session.clear()

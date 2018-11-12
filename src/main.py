@@ -17,6 +17,7 @@ def main(app, controller):
 	app.add_url_rule('/', 'indexPage', lambda: controller.indexPage())
 	app.add_url_rule('/register', 'registerPage', lambda: controller.registerPage())
 	app.add_url_rule('/home', 'homePage', lambda: controller.homePage())
+	app.add_url_rule('/linkFileToCloudset', 'linkFileToCloudset', lambda: controller.linkFileToCloudset(), methods=['GET'])
 	app.add_url_rule('/login', 'login', lambda: controller.login(), methods=['POST'])
 	app.add_url_rule('/create_login', 'create_login', lambda: controller.create_login(), methods=['POST'])
 	app.add_url_rule('/upload_file', 'upload_file', lambda: controller.upload_file(), methods=['POST'])
