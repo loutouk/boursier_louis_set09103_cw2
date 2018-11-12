@@ -53,10 +53,10 @@ class Controller:
 	def getFilesDict(self):
 		db = Database("var/sqlite3.db")
 		filesList = db.get_user_files(session["user"])
-		# file{name => id}
+		# file{id => name}
 		files = {}
 		for currentFile in filesList:
-			files[currentFile[0]] = currentFile[1]
+			files[currentFile[1]] = currentFile[0]
 		return files
 
 	def getSetsDict(self):
@@ -145,57 +145,58 @@ class Controller:
 			fileList = []
 			files = []
 
-			# detect if its a simple request or a advanced set opertor based request
-			setOperatorRequest = bool(re.match('^.*[\&\-\^\|]+.*$', inputSetsList))
+			# the coma corresponds to the union operator ( | in Python)
+			orderedSetName = []
+			orderedSetOperation = []
+			leftTermBeginIndex = 0;
 
-			if(setOperatorRequest == False):
-				sets = inputSetsList.split(",")
-				setsList = []
-				for currentSet in sets:
-					setsList.append(currentSet.encode('ascii','ignore').strip())
-				files = db.get_user_files_by_sets(session["user"], setsList)
-				
+			for i in range(len(inputSetsList)):
+				if inputSetsList[i] in [",", "&", "^", "-", "|"]:
+						orderedSetName.append(inputSetsList[leftTermBeginIndex:i].encode('ascii','ignore').strip())
+						orderedSetOperation.append(inputSetsList[i].encode('ascii','ignore'))
+						leftTermBeginIndex = i + 1
+			# add the last set name
+			orderedSetName.append(inputSetsList[leftTermBeginIndex:len(inputSetsList)].encode('ascii','ignore').strip())
+			# set{name => id}
+			sets = self.getSetsDict()
+			# cloudsets{id => Cloudset()}
+			cloudsets = self.getCloudsets(sets)
+			# fi
+			filesNames = self.getFilesDict()
+
+			# create an empty set for the Cloudset name which does not exist
+			if orderedSetName[0] in sets:
+				leftSet = set(cloudsets[sets[orderedSetName[0]]].set.keys())
 			else:
-				# the coma corresponds to the union operator (|in Python)
-				orderedSetName = []
-				orderedSetOperation = []
-				leftTermBeginIndex = 0;
+				leftSet = set()
 
-				for i in range(len(inputSetsList)):
-					if inputSetsList[i] in [",", "&", "^", "-", "|"]:
-							orderedSetName.append(inputSetsList[leftTermBeginIndex:i].encode('ascii','ignore').strip())
-							orderedSetOperation.append(inputSetsList[i].encode('ascii','ignore'))
-							leftTermBeginIndex = i + 1
-				# add the last set name
-				orderedSetName.append(inputSetsList[leftTermBeginIndex:len(inputSetsList)].encode('ascii','ignore').strip())
-				# set{name => id}
-				sets = self.getSetsDict()
-				# cloudsets{id => Cloudset()}
-				cloudsets = self.getCloudsets(sets)
+			for i in range(1, len(orderedSetName)):
+				if orderedSetName[i] in sets:
+					rightSet = set(cloudsets[sets[orderedSetName[i]]].set.keys())
 				# create an empty set for the Cloudset name which does not exist
-				if orderedSetName[0] in sets:
-					leftSet = set(cloudsets[sets[orderedSetName[0]]].set.keys())
 				else:
-					leftSet = set()
+					rightSet = set()
+				setOperator = orderedSetOperation[i-1]
+				if(setOperator == "," or setOperator == "|"):
+					leftSet = leftSet.union(rightSet)
+				elif(setOperator == "^"):
+					leftSet = leftSet.symmetric_difference(rightSet)
+				elif(setOperator == "&"):
+					leftSet = leftSet.intersection(rightSet)
+				elif(setOperator == "-"):
+					leftSet = leftSet.difference(rightSet)
+					
+			files = db.get_user_files_by_ids(session["user"], list(leftSet))
 
-				for i in range(1, len(orderedSetName)):
-					if orderedSetName[i] in sets:
-						rightSet = set(cloudsets[sets[orderedSetName[i]]].set.keys())
-					# create an empty set for the Cloudset name which does not exist
-					else:
-						rightSet = set()
-					setOperator = orderedSetOperation[i-1]
-					if(setOperator == "," or setOperator == "|"):
-						leftSet = leftSet.union(rightSet)
-					elif(setOperator == "^"):
-						leftSet = leftSet.symmetric_difference(rightSet)
-					elif(setOperator == "&"):
-						leftSet = leftSet.intersection(rightSet)
-					elif(setOperator == "-"):
-						leftSet = leftSet.difference(rightSet)
-						
-				files = db.get_user_files_by_ids(session["user"], list(leftSet))
-
+			# links file id to their cloudset name
+			# fileName => setsName()
+			fileMapSets = {}
+			for fileId in leftSet:
+				# use set to store set name for having no duplicate
+				fileMapSets[filesNames[fileId]] = set()
+				for c in cloudsets:
+					if fileId in cloudsets[c].set:
+						fileMapSets[filesNames[fileId]].add(cloudsets[c].name)
 			
 			# Ask Google Drive API's all files, and return them which have the same name than those in our list
 			results = drive_service.files().list(pageSize=10, fields="nextPageToken, files(name, webViewLink)").execute()
@@ -207,7 +208,7 @@ class Controller:
 						if any(item['name'] in s for s in files):
 							fileList.append([item['name'],item['webViewLink']])
 
-			return render_template('files.html', content=fileList)
+			return render_template('files.html', files=fileList, fileMapSets=fileMapSets, sets=sets, defaultSet=DEFAULT_SET)
 
 	def init_drive_folder(self):
 		file_metadata = {
