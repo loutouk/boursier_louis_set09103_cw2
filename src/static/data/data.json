@@ -2,11 +2,7 @@
  "name": "DefaultSet", 
  "children": [
   {
-   "name": "help", 
-   "size": 1
-  }, 
-  {
-   "name": "logo", 
+   "name": "a", 
    "size": 1
   }
  ]

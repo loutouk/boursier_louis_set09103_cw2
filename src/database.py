@@ -10,6 +10,8 @@ class Database:
 		self.conn = sqlite3.connect(self.dbFileLocation)
 		if init:
 			self.create_database()
+		self.conn.commit()
+		
 
 	# when the database object is destroyed, we also want to close the connection with the datatabse
 	def __del__(self):
@@ -81,6 +83,7 @@ class Database:
 
 	def deleteFile(self, fileName, userEmail):
 		self.conn = sqlite3.connect(self.dbFileLocation)
+		self.conn.cursor().execute("PRAGMA foreign_keys = ON")
 		res = self.conn.cursor().execute('''DELETE FROM file WHERE 
 			file.id IN 
 			(select file.id from file INNER JOIN user ON user.id = file.userId where user.email = :email and file.name = :fileName)''', 
@@ -160,9 +163,7 @@ class Database:
 		  name TEXT NOT NULL,
 		  driveId TEXT NOT NULL,
 		  UNIQUE(userId, name) ON CONFLICT IGNORE,
-		  FOREIGN KEY(userId) REFERENCES user(id) 
-		  	ON UPDATE CASCADE 
-		  	ON DELETE CASCADE 
+		  CONSTRAINT fk_userId FOREIGN KEY(userId) REFERENCES user(id) ON DELETE CASCADE 
 		)"""
 		res = self.conn.cursor().execute(query)
 		
@@ -170,12 +171,8 @@ class Database:
 		  id INTEGER PRIMARY KEY,
 		  cloudsetId INTEGER,
 		  fileId INTEGER,
-		  FOREIGN KEY(cloudsetId) REFERENCES cloudset(id) 
-			  ON UPDATE CASCADE 
-			  ON DELETE CASCADE,
-		  FOREIGN KEY(fileId) REFERENCES file(id) 
-			  ON UPDATE CASCADE 
-			  ON DELETE CASCADE 
+		  CONSTRAINT fk_cloudsetId FOREIGN KEY(cloudsetId) REFERENCES cloudset(id) ON DELETE CASCADE,
+		  CONSTRAINT fk_fileId FOREIGN KEY(fileId) REFERENCES file(id) ON DELETE CASCADE 
 		)"""
 		res = self.conn.cursor().execute(query)
 		self.conn.commit()
