@@ -79,9 +79,23 @@ class Database:
 		self.conn.commit()
 		return res
 
+	def deleteFile(self, fileName, userEmail):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		res = self.conn.cursor().execute('''DELETE FROM file WHERE 
+			file.id IN 
+			(select file.id from file INNER JOIN user ON user.id = file.userId where user.email = :email and file.name = :fileName)''', 
+			{"email":userEmail, "fileName":fileName})
+		self.conn.commit()
+		return res
+
 	def get_user_files(self, userEmail):
 		self.conn = sqlite3.connect(self.dbFileLocation)
 		res = self.conn.cursor().execute('SELECT file.name, file.id FROM file LEFT JOIN user ON user.id = file.userId where user.email = ?', (userEmail,)).fetchall()
+		return res
+
+	def get_user_file_drive_id(self, userEmail, fileName):
+		self.conn = sqlite3.connect(self.dbFileLocation)
+		res = self.conn.cursor().execute('SELECT file.driveId FROM file LEFT JOIN user ON user.id = file.userId where user.email = ? and file.name = ?', (userEmail,fileName,)).fetchall()
 		return res
 
 	def get_user_sets(self, userEmail):

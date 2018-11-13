@@ -50,6 +50,7 @@
 
 <script type="text/javascript">
   $(document).ready(function() {
+
     $('a').each(function(key, value) {
       var fileName = $(this).text().trim();
       var dropdown_menu = $(this).parent().parent();
@@ -89,6 +90,29 @@
         });
       });
     });
+
+    $('.btn-danger').each(function(key, value) {
+      var htmlLine = $(this).parent().parent();
+      var fileName = $(htmlLine).find("a").text();
+      $(this).on("click", function(){
+          $.ajax({
+                  url: "{{url_for('deleteFile')}}",
+                  data: {
+                    fileName: fileName
+                  }
+                }).done(function(data) {
+                  if(data === "OK"){
+                     alertify.success('Deleted');
+                     // Remove the html line corresponding to this file
+                     console.log(htmlLine);
+                     $(htmlLine).remove()
+                  }else{
+                     alertify.error('Error');
+                  }
+                });
+        });
+      });
+
   });
 </script>
 {% endblock %}}

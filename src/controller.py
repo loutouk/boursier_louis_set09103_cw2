@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, flash, url_for, session
+from flask import Flask, render_template, request, redirect, flash, url_for, session, abort
 from flask_session import Session
 from flask_bcrypt import Bcrypt
 from googleapiclient.discovery import build
@@ -38,12 +38,11 @@ drive_service = build('drive', 'v3', http=creds.authorize(Http()))
 class Controller:
 	def __init__(self, app):
 		self.app = app
-		Session(self.app)
 		self.bcrypt = Bcrypt(self.app)
 
 
 	def indexPage(self):
-		if session.get("user"):
+		if "user" in session:
 			return self.homePage()
 		return render_template('index.html', )
 
@@ -51,6 +50,8 @@ class Controller:
 		return render_template('register.html', )
 
 	def getFilesDict(self):
+		self.verifyIdentification()
+
 		db = Database("var/sqlite3.db")
 		filesList = db.get_user_files(session["user"])
 		# file{id => name}
@@ -59,7 +60,20 @@ class Controller:
 			files[currentFile[1]] = currentFile[0]
 		return files
 
+	def getFilesDictPerName(self):
+		self.verifyIdentification()
+
+		db = Database("var/sqlite3.db")
+		filesList = db.get_user_files(session["user"])
+		# file{name => id}
+		files = {}
+		for currentFile in filesList:
+			files[currentFile[0]] = currentFile[1]
+		return files
+
 	def getSetsDict(self):
+		self.verifyIdentification()
+
 		db = Database("var/sqlite3.db")
 		setsList = db.get_user_sets(session["user"])
 		# set{name => id}
@@ -69,6 +83,8 @@ class Controller:
 		return sets
 
 	def getCloudsets(self, sets):
+		self.verifyIdentification()
+
 		db = Database("var/sqlite3.db")
 
 		# cloudsets{id => Cloudset()}
@@ -116,6 +132,7 @@ class Controller:
 		return cloudsets
 
 	def homePage(self):
+		self.verifyIdentification()
 		db = Database("var/sqlite3.db")
 		# set{name => id}
 		sets = self.getSetsDict()
@@ -132,6 +149,8 @@ class Controller:
 		return render_template('home.html', )
 
 	def search_files_by_sets(self):
+		self.verifyIdentification()
+
 		if request.method == 'POST':
 			db = Database("var/sqlite3.db", True)
 			# no htmlentities() or equivalent because flask uses its own xss protection while using render_template()
@@ -234,6 +253,7 @@ class Controller:
 			raise DriveFolderNil("Error: no root file for the name " + folder_name)
 
 	def upload_file(self):
+		self.verifyIdentification()
 
 		if request.method == 'POST':
 
@@ -335,7 +355,23 @@ class Controller:
 				flash('Failed to create account.')
 		return self.indexPage()
 
+	def deleteFile(self):
+		self.verifyIdentification()
+
+		fileName = request.args.get('fileName').encode('ascii','ignore').strip()
+		if fileName and fileName != DEFAULT_FILE:
+			db = Database("var/sqlite3.db", True)
+			driveId = db.get_user_file_drive_id(session["user"], fileName)
+			if len(driveId) > 0:
+				driveId = driveId[0][0]
+				drive_service.files().delete(fileId=driveId).execute()
+				res = db.deleteFile(fileName, session["user"])
+				return "OK"
+		return "NOK"
+
 	def linkFileToCloudset(self):
+		self.verifyIdentification()
+
 		fileName = request.args.get('fileName')
 		setName = request.args.get('setName')
 		toLinked = request.args.get('toLinked')
@@ -355,3 +391,9 @@ class Controller:
 
 	def page_not_found(self):
   		return render_template('404.html'), 404
+
+	def verifyIdentification(self):
+		if not "user" in session:
+			abort(403)
+			#return self.logout()
+			
