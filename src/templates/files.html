@@ -104,8 +104,9 @@
                   if(data === "OK"){
                      alertify.success('Deleted');
                      // Remove the html line corresponding to this file
-                     console.log(htmlLine);
-                     $(htmlLine).remove()
+                     $(htmlLine).fadeOut(500, function() {
+                          $(htmlLine).remove();
+                      });
                   }else{
                      alertify.error('Error');
                   }

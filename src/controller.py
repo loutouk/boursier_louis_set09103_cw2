@@ -141,12 +141,9 @@ class Controller:
 		
 		# find the biggest cloudset, and use it to create the JSON file
 		biggestSet = cloudsets[sets[DEFAULT_SET]]
+		data = biggestSet.toJSON()
 
-		# erase the content and write
-		f = open(os.path.join('static','data','data.json'), "w")
-		f.write(biggestSet.toJSON())
-
-		return render_template('home.html', )
+		return render_template('home.html', data=data)
 
 	def search_files_by_sets(self):
 		self.verifyIdentification()
@@ -297,7 +294,6 @@ class Controller:
 				media = MediaFileUpload(os.path.join(UPLOAD_FOLDER, filename))
 				driveFile = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
 				driveId = driveFile["id"]
-				# TODO remove the file from uploads, now that it is on drive
 				if(file is None):
 					raise DriveFileAdd("Error: could not add the file " + filename + " to the drive")
 					flash('Error. File not uploaded.')
@@ -313,8 +309,6 @@ class Controller:
 						db.associate_set_to_file(tag, filename, session["user"])
 					flash('File uploaded.')
 		
-
-
 		return redirect(url_for("homePage")) 
 
 	def allowed_file(self, filename):

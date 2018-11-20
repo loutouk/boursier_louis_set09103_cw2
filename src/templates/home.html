@@ -67,9 +67,8 @@
      .size([diameter - margin, diameter - margin])
      .padding(2);
    
-   d3.json("{{ url_for('static', filename='data/data.json') | safe}}", function(error, root) {
-   if (error) throw error;
-   
+   var root = {{data | safe}};
+
    root = d3.hierarchy(root)
        .sum(function(d) { return d.size; })
        .sort(function(a, b) { return b.value - a.value; });
@@ -124,7 +123,7 @@
      node.attr("transform", function(d) { return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")"; });
      circle.attr("r", function(d) { return d.r * k; });
    }
-   });
+   
 </script>
 <script type="text/javascript">
    // Get the modal
