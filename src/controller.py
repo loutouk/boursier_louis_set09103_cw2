@@ -342,6 +342,8 @@ class Controller:
 			hashedPassword = self.bcrypt.generate_password_hash(password)
 			res = db.create_user(email, hashedPassword, DEFAULT_SET, DEFAULT_FILE)
 			if res:
+				# we create the local folder which is used as temporary storage before sending the file to the cloud
+				os.mkdir(UPLOAD_FOLDER)
 				# we create its drive folder where we are going to store the datas
 				self.init_drive_folder()
 				flash('Account created. You can login.')
